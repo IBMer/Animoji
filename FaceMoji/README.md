@@ -13,9 +13,12 @@ FaceMoji is a complete rewrite of the Animoji project using modern Swift and Swi
 - ✅ **24+ Animoji Characters**: All available Animoji puppets from iOS 11.1+
 - ✅ **Face Tracking**: Real-time face tracking using TrueDepth camera
 - ✅ **Clean Architecture**: MVVM + Clean Architecture Lite pattern
-- 🚧 **Recording** (Coming Soon): Record and export Animoji videos
-- 🚧 **Customization** (Coming Soon): Background colors and effects
-- 🚧 **History** (Coming Soon): Manage recorded videos
+- ✅ **Recording**: Record and export Animoji videos with audio
+- ✅ **Video Export**: Export recordings to .mov format
+- ✅ **Storage Management**: Automatic recording history (max 5 videos)
+- ✅ **Background Customization**: 8 preset background colors
+- 🚧 **GIF Export** (Coming Soon): Export recordings as animated GIFs
+- 🚧 **History UI** (Coming Soon): Browse and manage recordings
 
 ## Requirements
 
@@ -118,13 +121,21 @@ Add the following keys to your app's `Info.plist`:
 - [x] Update Example App with full UI
 - [x] Test puppet loading and switching
 
+### Sprint 5: Recording Functionality ✅ COMPLETED
+
+- [x] Implement AnimojiRecorder (recording engine)
+- [x] Create VideoExporter (export and conversion)
+- [x] Create RecordingStorage (persistent storage)
+- [x] Integrate recording into AnimojiRecordView
+- [x] Update ContentViewModel with full recording logic
+- [x] Implement AnimojiRecorderDelegate
+- [x] Add recording history management (max 5 recordings)
+
 ### Upcoming Sprints
 
-- Sprint 3: Basic UI Implementation
-- Sprint 4: MVVM Architecture and State Management
-- Sprint 5: Recording Functionality
-- Sprint 6: Error Handling and Permissions
-- Sprint 7: UX Enhancements
+- Sprint 6: Error Handling and Polish
+- Sprint 7: UX Enhancements (Background selection, Haptics)
+- Sprint 8: Advanced Features (GIF export, Recording history UI)
 - Sprint 8: Advanced Features
 
 See [SWIFTUI_REWRITE_DESIGN.md](../SWIFTUI_REWRITE_DESIGN.md) for the complete development roadmap.

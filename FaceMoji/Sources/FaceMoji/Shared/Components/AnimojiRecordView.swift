@@ -18,6 +18,7 @@ public class AnimojiRecordView: UIView {
 
     private let recordView: SCNView
     private let loader = AvatarKitLoader.shared
+    private let recorder = AnimojiRecorder.shared
 
     /// The current puppet being displayed
     public private(set) var currentPuppet: PuppetModel?
@@ -26,10 +27,14 @@ public class AnimojiRecordView: UIView {
     public private(set) var isTracking = false
 
     /// Whether recording is in progress
-    public private(set) var isRecording = false
+    public var isRecording: Bool {
+        recorder.isRecording
+    }
 
     /// Whether preview is playing
-    public private(set) var isPreviewing = false
+    public var isPreviewing: Bool {
+        recorder.isPreviewing
+    }
 
     /// Background color for the scene
     public var sceneBackgroundColor: UIColor = .black {
@@ -74,6 +79,9 @@ public class AnimojiRecordView: UIView {
 
         // Add as subview
         addSubview(recordView)
+
+        // Set the record view in the recorder
+        recorder.setRecordView(recordView as NSObject)
 
         // Start face tracking automatically
         startTracking()
@@ -134,78 +142,49 @@ public class AnimojiRecordView: UIView {
         isTracking = false
     }
 
-    // MARK: - Recording (Stub implementations for Sprint 2)
+    // MARK: - Recording
 
     /// Starts recording an Animoji video
-    /// - Note: Full implementation will be added in Sprint 5
-    public func startRecording() {
-        guard !isRecording else { return }
-
-        // Call private API method
-        recordView.perform(Selector(("startRecording")))
-        isRecording = true
-
-        print("🔴 Recording started")
+    public func startRecording() async throws {
+        try await recorder.startRecording()
     }
 
     /// Stops recording
-    /// - Note: Full implementation will be added in Sprint 5
-    public func stopRecording() {
-        guard isRecording else { return }
-
-        // Call private API method
-        recordView.perform(Selector(("stopRecording")))
-        isRecording = false
-
-        print("⏹️ Recording stopped")
+    public func stopRecording() async {
+        await recorder.stopRecording()
     }
 
     /// Starts previewing the recorded video
-    /// - Note: Full implementation will be added in Sprint 5
-    public func startPreviewing() {
-        guard !isPreviewing else { return }
-
-        // Call private API method
-        recordView.perform(Selector(("startPreviewing")))
-        isPreviewing = true
-
-        print("▶️ Preview started")
+    public func startPreviewing() async throws {
+        try await recorder.startPreviewing()
     }
 
     /// Stops previewing
-    /// - Note: Full implementation will be added in Sprint 5
     public func stopPreviewing() {
-        guard isPreviewing else { return }
-
-        // Call private API method
-        recordView.perform(Selector(("stopPreviewing")))
-        isPreviewing = false
-
-        print("⏸️ Preview stopped")
+        recorder.stopPreviewing()
     }
 
     /// Exports the recorded movie to a URL
     /// - Parameters:
     ///   - url: The destination URL
     ///   - options: Export options
-    ///   - completion: Completion handler
-    /// - Note: Full implementation will be added in Sprint 5
     public func exportMovie(
         toURL url: URL,
-        options: [String: Any]? = nil,
-        completionHandler completion: (() -> Void)? = nil
-    ) {
-        // This will be implemented in Sprint 5
-        print("💾 Export movie to: \(url.lastPathComponent)")
-        completion?()
+        options: [String: Any]? = nil
+    ) async throws {
+        try await recorder.exportMovie(to: url, options: options)
+    }
+
+    /// Gets the current recording URL
+    public var currentRecordingURL: URL? {
+        recorder.currentRecordingURL
     }
 
     // MARK: - Cleanup
 
     deinit {
         stopTracking()
-        stopRecording()
-        stopPreviewing()
+        // Recorder cleanup is handled by AnimojiRecorder singleton
     }
 }
 

@@ -79,12 +79,25 @@ public final class ContentViewModel {
     // MARK: - Dependencies
 
     private let puppetManager: PuppetManager
+    private let recorder: AnimojiRecorder
+    private let storage: RecordingStorage
     private var recordingTimer: Timer?
 
     // MARK: - Initialization
 
-    public init(puppetManager: PuppetManager = .shared) {
+    public init(
+        puppetManager: PuppetManager = .shared,
+        recorder: AnimojiRecorder = .shared,
+        storage: RecordingStorage = .shared
+    ) {
         self.puppetManager = puppetManager
+        self.recorder = recorder
+        self.storage = storage
+
+        // Set self as recorder delegate
+        Task { @MainActor in
+            self.recorder.delegate = self
+        }
     }
 
     // MARK: - Puppet Management
@@ -167,29 +180,60 @@ public final class ContentViewModel {
             return
         }
 
-        HapticManager.mediumTap()
-        recordingState = .recording
-        startRecordingTimer()
-
-        print("🔴 Recording started")
+        // Start actual recording via AnimojiRecorder
+        do {
+            try await recorder.startRecording()
+            HapticManager.mediumTap()
+            recordingState = .recording
+            startRecordingTimer()
+            print("🔴 Recording started")
+        } catch {
+            handleError(error)
+        }
     }
 
     /// Stops recording
     private func stopRecording() async {
+        await recorder.stopRecording()
         HapticManager.success()
         recordingState = .preview
         stopRecordingTimer()
+
+        // Save recording to storage
+        if let url = recorder.currentRecordingURL,
+           let puppetName = currentPuppet?.name {
+            do {
+                let recording = try await storage.saveRecording(
+                    from: url,
+                    puppetName: puppetName,
+                    duration: recordingDuration
+                )
+                print("💾 Saved recording: \(recording.id)")
+            } catch {
+                print("⚠️ Failed to save recording: \(error)")
+            }
+        }
 
         print("⏹️ Recording stopped")
     }
 
     /// Toggles preview playback
-    public func togglePreview() {
+    public func togglePreview() async {
         guard recordingState == .preview else { return }
 
-        // This will be fully implemented in Sprint 5
         HapticManager.lightTap()
-        print("▶️ Toggle preview")
+
+        if recorder.isPreviewing {
+            recorder.stopPreviewing()
+            print("⏸️ Preview paused")
+        } else {
+            do {
+                try await recorder.startPreviewing()
+                print("▶️ Preview started")
+            } catch {
+                handleError(error)
+            }
+        }
     }
 
     /// Deletes the current recording
@@ -197,6 +241,11 @@ public final class ContentViewModel {
         guard recordingState == .preview else { return }
 
         HapticManager.warning()
+
+        // Delete from recorder
+        recorder.deleteCurrentRecording()
+
+        // Reset state
         recordingState = .idle
         recordingDuration = 0
 
@@ -206,9 +255,13 @@ public final class ContentViewModel {
     /// Exports the recording
     /// - Parameter url: The URL to export to
     public func exportRecording(to url: URL) async {
-        // This will be fully implemented in Sprint 5
-        HapticManager.success()
-        print("💾 Export recording to: \(url.lastPathComponent)")
+        do {
+            try await recorder.exportMovie(to: url)
+            HapticManager.success()
+            print("💾 Export recording to: \(url.lastPathComponent)")
+        } catch {
+            handleError(error)
+        }
     }
 
     // MARK: - Recording Timer
@@ -301,5 +354,34 @@ extension ContentViewModel {
     /// Whether the preview controls should be shown
     public var showPreviewControls: Bool {
         recordingState == .preview
+    }
+}
+
+// MARK: - AnimojiRecorderDelegate
+
+extension ContentViewModel: AnimojiRecorderDelegate {
+    public func recorderDidStartRecording(_ recorder: AnimojiRecorder) {
+        // Already handled in startRecording()
+    }
+
+    public func recorderDidStopRecording(_ recorder: AnimojiRecorder) {
+        // Already handled in stopRecording()
+    }
+
+    public func recorderDidStartPreviewing(_ recorder: AnimojiRecorder) {
+        print("▶️ Recorder started previewing")
+    }
+
+    public func recorderDidStopPreviewing(_ recorder: AnimojiRecorder) {
+        print("⏸️ Recorder stopped previewing")
+    }
+
+    public func recorderDidFinishPlaying(_ recorder: AnimojiRecorder) {
+        print("✅ Playback finished")
+        // Optionally restart preview automatically
+    }
+
+    public func recorder(_ recorder: AnimojiRecorder, didFailWithError error: Error) {
+        handleError(error)
     }
 }

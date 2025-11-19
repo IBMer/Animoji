@@ -133,7 +133,9 @@ public struct RecordingControlsView: View {
 
             // Play/Pause button
             Button {
-                viewModel.togglePreview()
+                Task {
+                    await viewModel.togglePreview()
+                }
             } label: {
                 ZStack {
                     Circle()
