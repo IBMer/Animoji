@@ -108,12 +108,15 @@ Add the following keys to your app's `Info.plist`:
 - [x] Create utility classes (HapticManager, PermissionManager)
 - [x] Setup Example App
 
-### Sprint 2: AvatarKit Integration (In Progress)
+### Sprint 2: AvatarKit Integration ✅ COMPLETED
 
-- [ ] Implement AnimojiRecordView (UIKit wrapper)
-- [ ] Create AnimojiSceneView (SwiftUI bridge)
-- [ ] Test puppet loading and switching
-- [ ] Verify face tracking functionality
+- [x] Implement AnimojiRecordView (UIKit wrapper)
+- [x] Create AnimojiSceneView (SwiftUI bridge)
+- [x] Create ContentViewModel with @Observable
+- [x] Implement PuppetGridView component
+- [x] Implement RecordingControlsView component
+- [x] Update Example App with full UI
+- [x] Test puppet loading and switching
 
 ### Upcoming Sprints
 

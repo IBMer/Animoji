@@ -10,135 +10,226 @@ import SwiftUI
 import FaceMoji
 
 struct ContentView: View {
-    @State private var puppets: [PuppetModel] = []
-    @State private var selectedPuppet: PuppetModel?
-    @State private var isLoading = true
-    @State private var errorMessage: String?
+    // MARK: - Properties
+
+    @State private var viewModel = ContentViewModel()
+    @Environment(\.colorScheme) private var colorScheme
+
+    // MARK: - Body
 
     var body: some View {
         NavigationStack {
-            VStack {
-                if isLoading {
-                    ProgressView("Loading Puppets...")
-                        .padding()
-                } else if let error = errorMessage {
-                    VStack(spacing: 16) {
-                        Image(systemName: "exclamationmark.triangle")
-                            .font(.system(size: 48))
-                            .foregroundStyle(.orange)
-
-                        Text("Error Loading")
-                            .font(.headline)
-
-                        Text(error)
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                            .multilineTextAlignment(.center)
-                            .padding(.horizontal)
-
-                        Button("Retry") {
-                            loadPuppets()
-                        }
-                        .buttonStyle(.borderedProminent)
-                    }
-                    .padding()
+            VStack(spacing: 0) {
+                if viewModel.isLoadingPuppets {
+                    loadingView
+                } else if viewModel.availablePuppets.isEmpty {
+                    errorView
                 } else {
-                    puppetGrid
+                    mainContent
                 }
             }
             .navigationTitle("FaceMoji")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    settingsButton
+                }
+            }
+            .sheet(isPresented: $viewModel.showSettings) {
+                settingsView
+            }
+            .alert("Error", isPresented: $viewModel.showError) {
+                Button("OK") {
+                    viewModel.clearError()
+                }
+            } message: {
+                if let message = viewModel.errorMessage {
+                    Text(message)
+                }
+            }
             .task {
-                loadPuppets()
+                await viewModel.loadPuppets()
+                await viewModel.requestPermissions()
             }
         }
     }
 
-    private var puppetGrid: some View {
-        ScrollView {
-            LazyVGrid(
-                columns: Array(repeating: GridItem(.flexible(), spacing: 12), count: 4),
-                spacing: 12
-            ) {
-                ForEach(puppets) { puppet in
-                    PuppetCell(
-                        puppet: puppet,
-                        isSelected: puppet.id == selectedPuppet?.id
-                    ) {
-                        selectedPuppet = puppet
-                        HapticManager.lightTap()
+    // MARK: - Main Content
+
+    private var mainContent: some View {
+        VStack(spacing: 0) {
+            // Animoji Scene
+            AnimojiSceneView(
+                puppet: viewModel.currentPuppet,
+                backgroundColor: viewModel.backgroundColor,
+                isRecording: viewModel.isRecording,
+                isPreviewing: viewModel.isPreviewing
+            )
+            .frame(height: 400)
+            .clipShape(RoundedRectangle(cornerRadius: 20))
+            .shadow(color: .black.opacity(0.1), radius: 10, x: 0, y: 5)
+            .padding()
+
+            // Status indicator
+            if let puppet = viewModel.currentPuppet {
+                Text("Current: \(puppet.displayName)")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .padding(.bottom, 8)
+            }
+
+            // Puppet Grid
+            PuppetGridView(
+                puppets: viewModel.availablePuppets,
+                selectedPuppet: viewModel.currentPuppet
+            ) { puppet in
+                viewModel.selectPuppet(puppet)
+            }
+            .frame(height: 220)
+
+            Spacer()
+
+            // Recording Controls
+            RecordingControlsView(viewModel: viewModel)
+                .padding(.horizontal)
+                .padding(.bottom, 8)
+        }
+    }
+
+    // MARK: - Loading View
+
+    private var loadingView: some View {
+        VStack(spacing: 20) {
+            ProgressView()
+                .scaleEffect(1.5)
+
+            Text("Loading Animoji Puppets...")
+                .font(.headline)
+                .foregroundStyle(.secondary)
+
+            Text("This may take a moment")
+                .font(.caption)
+                .foregroundStyle(.tertiary)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+
+    // MARK: - Error View
+
+    private var errorView: some View {
+        VStack(spacing: 20) {
+            Image(systemName: "exclamationmark.triangle")
+                .font(.system(size: 64))
+                .foregroundStyle(.orange)
+
+            Text("Failed to Load Puppets")
+                .font(.title2)
+                .fontWeight(.semibold)
+
+            Text("AvatarKit framework may not be available on this device.")
+                .font(.body)
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, 40)
+
+            Button {
+                Task {
+                    await viewModel.loadPuppets()
+                }
+            } label: {
+                Label("Retry", systemImage: "arrow.clockwise")
+            }
+            .buttonStyle(.borderedProminent)
+            .padding(.top)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .padding()
+    }
+
+    // MARK: - Settings Button
+
+    private var settingsButton: some View {
+        Button {
+            viewModel.showSettings = true
+        } label: {
+            Image(systemName: "gearshape")
+                .font(.body)
+        }
+    }
+
+    // MARK: - Settings View
+
+    private var settingsView: some View {
+        NavigationStack {
+            Form {
+                // Background Color Section
+                Section("Background") {
+                    ForEach(Color.AnimojiBackground.allCases) { background in
+                        Button {
+                            viewModel.changeBackground(background)
+                        } label: {
+                            HStack {
+                                Circle()
+                                    .fill(background.color)
+                                    .frame(width: 32, height: 32)
+                                    .overlay {
+                                        if background.isGradient {
+                                            LinearGradient.animojiGradient
+                                                .clipShape(Circle())
+                                        }
+                                    }
+
+                                Text(background.displayName)
+                                    .foregroundStyle(.primary)
+
+                                Spacer()
+
+                                if viewModel.selectedBackground == background {
+                                    Image(systemName: "checkmark")
+                                        .foregroundStyle(.blue)
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // Info Section
+                Section("Information") {
+                    LabeledContent("Puppets Loaded", value: "\(viewModel.availablePuppets.count)")
+                    LabeledContent("iOS Version", value: "17.0+")
+                    LabeledContent("Framework", value: "SwiftUI + AvatarKit")
+                }
+
+                // Permissions Section
+                Section("Permissions") {
+                    Button {
+                        PermissionManager.openSettings()
+                    } label: {
+                        Label("Open Settings", systemImage: "gear")
                     }
                 }
             }
-            .padding()
-        }
-    }
-
-    private func loadPuppets() {
-        isLoading = true
-        errorMessage = nil
-
-        Task {
-            do {
-                let loadedPuppets = try await PuppetManager.shared.loadAvailablePuppets()
-                await MainActor.run {
-                    self.puppets = loadedPuppets
-                    self.selectedPuppet = loadedPuppets.first
-                    self.isLoading = false
-                }
-            } catch {
-                await MainActor.run {
-                    self.errorMessage = error.localizedDescription
-                    self.isLoading = false
+            .navigationTitle("Settings")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button("Done") {
+                        viewModel.showSettings = false
+                    }
                 }
             }
         }
     }
 }
 
-// MARK: - Puppet Cell
+// MARK: - Previews
 
-struct PuppetCell: View {
-    let puppet: PuppetModel
-    let isSelected: Bool
-    let onTap: () -> Void
-
-    var body: some View {
-        VStack(spacing: 4) {
-            AsyncImage(url: puppet.thumbnailURL) { phase in
-                switch phase {
-                case .success(let image):
-                    image
-                        .resizable()
-                        .aspectRatio(contentMode: .fit)
-                case .failure:
-                    Image(systemName: "photo")
-                        .font(.title)
-                        .foregroundStyle(.secondary)
-                case .empty:
-                    ProgressView()
-                @unknown default:
-                    EmptyView()
-                }
-            }
-            .frame(width: 70, height: 70)
-            .background(Color(.systemGray6))
-            .clipShape(RoundedRectangle(cornerRadius: 12))
-            .overlay {
-                if isSelected {
-                    RoundedRectangle(cornerRadius: 12)
-                        .stroke(Color.blue, lineWidth: 3)
-                }
-            }
-
-            Text(puppet.displayName)
-                .font(.caption2)
-                .foregroundStyle(.secondary)
-                .lineLimit(1)
-        }
-        .onTapGesture(perform: onTap)
-    }
-}
-
-#Preview {
+#Preview("Content View - Light") {
     ContentView()
+        .preferredColorScheme(.light)
+}
+
+#Preview("Content View - Dark") {
+    ContentView()
+        .preferredColorScheme(.dark)
 }
