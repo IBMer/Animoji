@@ -63,6 +63,9 @@ public final class ContentViewModel {
     /// Whether to show background picker
     public var showBackgroundPicker = false
 
+    /// Whether to show recording history
+    public var showHistory = false
+
     // MARK: - Error Handling
 
     /// Current error to display

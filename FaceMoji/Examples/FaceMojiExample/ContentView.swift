@@ -31,12 +31,19 @@ struct ContentView: View {
             .navigationTitle("FaceMoji")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    historyButton
+                }
+
                 ToolbarItem(placement: .topBarTrailing) {
                     settingsButton
                 }
             }
             .sheet(isPresented: $viewModel.showSettings) {
                 settingsView
+            }
+            .sheet(isPresented: $viewModel.showHistory) {
+                RecordingHistoryView()
             }
             .alert("Error", isPresented: $viewModel.showError) {
                 Button("OK") {
@@ -146,7 +153,16 @@ struct ContentView: View {
         .padding()
     }
 
-    // MARK: - Settings Button
+    // MARK: - Toolbar Buttons
+
+    private var historyButton: some View {
+        Button {
+            viewModel.showHistory = true
+        } label: {
+            Image(systemName: "clock")
+                .font(.body)
+        }
+    }
 
     private var settingsButton: some View {
         Button {

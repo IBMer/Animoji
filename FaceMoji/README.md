@@ -17,8 +17,10 @@ FaceMoji is a complete rewrite of the Animoji project using modern Swift and Swi
 - ✅ **Video Export**: Export recordings to .mov format
 - ✅ **Storage Management**: Automatic recording history (max 5 videos)
 - ✅ **Background Customization**: 8 preset background colors
+- ✅ **Recording History UI**: Browse, preview, and manage saved recordings
+- ✅ **Video Thumbnails**: Auto-generated thumbnails for recordings
+- ✅ **Video Player**: Full-screen playback with controls
 - 🚧 **GIF Export** (Coming Soon): Export recordings as animated GIFs
-- 🚧 **History UI** (Coming Soon): Browse and manage recordings
 
 ## Requirements
 
@@ -131,12 +133,20 @@ Add the following keys to your app's `Info.plist`:
 - [x] Implement AnimojiRecorderDelegate
 - [x] Add recording history management (max 5 recordings)
 
+### Sprint 6: Recording History UI ✅ COMPLETED
+
+- [x] Create RecordingHistoryView (list of saved recordings)
+- [x] Implement RecordingRow with video thumbnails
+- [x] Add VideoPlayerView for fullscreen playback
+- [x] Create ThumbnailGenerator with caching
+- [x] Integrate history navigation in ContentView
+- [x] Add swipe-to-delete functionality
+- [x] Show storage usage and recording count
+
 ### Upcoming Sprints
 
-- Sprint 6: Error Handling and Polish
-- Sprint 7: UX Enhancements (Background selection, Haptics)
-- Sprint 8: Advanced Features (GIF export, Recording history UI)
-- Sprint 8: Advanced Features
+- Sprint 7: UX Polish (Animations, Error messages)
+- Sprint 8: Advanced Features (GIF export, Quality settings)
 
 See [SWIFTUI_REWRITE_DESIGN.md](../SWIFTUI_REWRITE_DESIGN.md) for the complete development roadmap.
 
